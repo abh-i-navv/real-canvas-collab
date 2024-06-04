@@ -84,6 +84,9 @@ const DrawingProvider = ({children} : Readonly<{
       };
 
       const updateElement = (id: string, element: DrawingElement) => {
+        if(!element || !id){
+          return
+        }
         elements.set(id, element)
       }
 

@@ -10,7 +10,7 @@ import { SelectionBox } from './selection-box';
 import { RenderCanvas } from './render';
 import { Socket } from 'socket.io-client';
 
-export const Canvas = ({socket}: {socket: Socket<any, any>}) => {
+export const Canvas = ({socket, boardId}: {socket?: Socket<any, any>, boardId?: string | string[]}) => {
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const [dimensions, setDimensions] = useState({ width: 0, height: 0 });
     const { elements,setElements, addElement, removeElement, pause, resume,updateElement,setCanvasState,canvasState, selection, setSelection,color, strokeWidth,backgroundColor } = useDrawingContext();
@@ -44,13 +44,26 @@ export const Canvas = ({socket}: {socket: Socket<any, any>}) => {
           
 
           setTimeout(() => {
-            socket.on('draw-data', (data: any) => {
-              addElement(data)
-            });
-            socket.on('update-data', (data: any) => {
-              updateElement(data.id,data)
-              RenderCanvas(canvas, options,elements, camera, selection)
-            });
+            if(socket){
+              socket.on('draw-data', (data: any) => {
+                addElement(data)
+              });
+              socket.on('update-data', (data: any) => {
+                if(!data){
+                  return
+                }
+                updateElement(data.id,data)
+                RenderCanvas(canvas, options,elements, camera, selection)
+              });
+
+              socket.on("undo-redo", (data: any) => {
+                setElements(data.elements)
+              })
+              socket.on('board-data', () => {
+                setElements(new Map())
+              });
+
+            }
           },50)
           
 
@@ -136,8 +149,9 @@ export const Canvas = ({socket}: {socket: Socket<any, any>}) => {
               setSelection(undefined)
               setCanvasState({mode: CanvasMode.Inserting, layerType: LayerType.Line})
               const line:any = generator.line(point.x,point.y,point.x,point.y,options)
-              
-              socket.emit("draw", line)
+              if(socket && boardId){
+                socket.emit("draw", {boardId,line})
+              }
 
               setCurrEle(line)
               addElement(line)
@@ -148,7 +162,10 @@ export const Canvas = ({socket}: {socket: Socket<any, any>}) => {
               const rect:any = generator.rectangle(point.x,point.y,0,0)
               setCurrEle(rect)
               addElement(rect)
-              socket.emit("draw", rect)
+
+              if(socket && boardId){
+                socket.emit("draw", {boardId,rect})
+              }
               
             }
             else if(canvasState.mode === CanvasMode.None && canvasState.layerType === LayerType.Ellipse){
@@ -157,7 +174,10 @@ export const Canvas = ({socket}: {socket: Socket<any, any>}) => {
               const ellipse:any = generator.ellipse(point.x,point.y,0,0)
               setCurrEle(ellipse)
               addElement(ellipse)
-              socket.emit("draw", ellipse)
+
+              if(socket && boardId){
+                socket.emit("draw", {boardId,ellipse})
+              }
               
             }
             else if(canvasState.mode === CanvasMode.None && canvasState.layerType === LayerType.Text){
@@ -167,7 +187,9 @@ export const Canvas = ({socket}: {socket: Socket<any, any>}) => {
               const text:any = generator.textBox(point.x,point.y,0,0,currText,options)
               setCurrEle(text)
               addElement(text)
-              socket.emit("draw", text)
+              if(socket && boardId){
+                socket.emit("draw", {boardId,text})
+              }
 
               setTimeout(() => {
                 inputRef.current?.focus();
@@ -182,7 +204,9 @@ export const Canvas = ({socket}: {socket: Socket<any, any>}) => {
               const brush:any = generator.brush(point.x,point.y,5,5,points,options)
               setCurrEle(brush)
               addElement(brush)
-              socket.emit("draw", brush)
+              if(socket && boardId){
+                socket.emit("draw", {boardId,brush})
+              }
               
             }
             else if(canvasState.mode === CanvasMode.None && canvasState.layerType === LayerType.Eraser){
@@ -194,7 +218,10 @@ export const Canvas = ({socket}: {socket: Socket<any, any>}) => {
               const brush:any = generator.eraser(point.x,point.y,5,5,points,options)
               setCurrEle(brush)
               addElement(brush)
-              socket.emit("draw", brush)
+
+              if(socket && boardId){
+                socket.emit("draw", {boardId,brush})
+              }
               
             }
             
@@ -229,7 +256,7 @@ export const Canvas = ({socket}: {socket: Socket<any, any>}) => {
             else if(canvasState.mode === CanvasMode.Inserting && canvasState.layerType === LayerType.Text){
             }
             else if(canvasState.mode === CanvasMode.Inserting && canvasState.layerType === LayerType.Brush){
-              // socket.emit("update-board", elements.get(currEle.id))
+              
               setCurrEle(undefined)
               setCanvasState({mode: CanvasMode.None, layerType: LayerType.Brush})
             }
@@ -450,14 +477,19 @@ export const Canvas = ({socket}: {socket: Socket<any, any>}) => {
               
               RenderCanvas(canvas, options,elements, camera,selectRect)
             }
-            socket.emit("update-board", currEle)
+            if(socket && boardId){
+              socket.emit("update-board", {data: currEle,boardId})
+            }
 
           }
 
           if(canvasState.mode === CanvasMode.Inserting && canvasState.layerType === LayerType.Line) {
             const newLine: any = generator.line(currEle.dimensions.x,currEle.dimensions.y, point.x,  point.y,currEle.options,null,currEle.id)
             updateElement(currEle.id, newLine)
-            socket.emit("update-board", newLine)
+
+            if(socket && boardId){
+              socket.emit("update-board", {data: newLine,boardId})
+            }
 
             RenderCanvas(canvas, options,elements, camera)
 
@@ -466,14 +498,20 @@ export const Canvas = ({socket}: {socket: Socket<any, any>}) => {
             const newRect: any = generator.rectangle(Math.min(currEle.dimensions.x, point.x),Math.min(currEle.dimensions.y, point.y), Math.abs(currEle.dimensions.x - point.x), Math.abs(currEle.dimensions.y - point.y),currEle.options,null,currEle.id)
             updateElement(currEle.id, newRect)
             RenderCanvas(canvas, options,elements, camera)
-            socket.emit("update-board", newRect)
+
+            if(socket && boardId){
+              socket.emit("update-board", {data: newRect,boardId})
+            }
           }
           else if(canvasState.mode === CanvasMode.Inserting && canvasState.layerType === LayerType.Ellipse) {
             const newEllipse: any = generator.ellipse(Math.min(currEle.dimensions.x, point.x),Math.min(currEle.dimensions.y, point.y), Math.abs(currEle.dimensions.x - point.x), Math.abs(currEle.dimensions.y - point.y), currEle.options, null, currEle.id)
             updateElement(currEle.id, newEllipse)
 
             RenderCanvas(canvas, options,elements, camera)
-            socket.emit("update-board", newEllipse)
+
+            if(socket && boardId){
+              socket.emit("update-board", {data: newEllipse,boardId})
+            }
           }
           else if(canvasState.mode === CanvasMode.Inserting && canvasState.layerType === LayerType.Brush){
             
@@ -503,7 +541,10 @@ export const Canvas = ({socket}: {socket: Socket<any, any>}) => {
 
             const newSvg = generator.brush(currEle.dimensions.x, currEle.dimensions.y, currEle.dimensions.w, currEle.dimensions.h, canvasState.current, currEle.options, null, currEle.id)
             updateElement(currEle.id, newSvg)
-            socket.emit("update-board", newSvg)
+
+            if(socket && boardId){
+              socket.emit("update-board", {data: newSvg,boardId})
+            }
 
             RenderCanvas(canvas, options,elements, camera)
           }
@@ -535,7 +576,10 @@ export const Canvas = ({socket}: {socket: Socket<any, any>}) => {
 
             const newSvg = generator.eraser(currEle.dimensions.x, currEle.dimensions.y, currEle.dimensions.w, currEle.dimensions.h, canvasState.current, currEle.options, null, currEle.id)
             updateElement(currEle.id, newSvg)
-            socket.emit("update-board", newSvg)
+
+            if(socket && boardId){
+              socket.emit("update-board", {data: newSvg,boardId})
+            }
 
             RenderCanvas(canvas, options,elements, camera)
           }
@@ -554,7 +598,9 @@ export const Canvas = ({socket}: {socket: Socket<any, any>}) => {
             if(metrics?.width){
               currEle.dimensions.w = (Math.round(metrics?.width)*4)
             }
-            socket.emit("update-board", currEle)
+            if(socket && boardId){
+              socket.emit("update-board", {data: currEle,boardId})
+            }
 
             setCanvasState({mode: CanvasMode.None, layerType: LayerType.Text})
             setCurrText('')
@@ -604,8 +650,12 @@ export const Canvas = ({socket}: {socket: Socket<any, any>}) => {
             canvas.removeEventListener("pointermove", onPointerMove)
             document.removeEventListener('keydown', onKeyDown)
             document.removeEventListener("paste",onPaste)
-            socket.off("draw-data")
-            socket.off("update-data")
+            if(socket ){
+              socket.off("draw-data")
+              socket.off("update-data")
+              socket.off("undo-redo")
+              socket.off("clear-board")
+            }
         }
         
     }, [elements, dimensions,canvasState,camera,currText,color,strokeWidth,selection,backgroundColor,socket]);
@@ -649,7 +699,7 @@ export const Canvas = ({socket}: {socket: Socket<any, any>}) => {
 
     return (
         <>
-            <ToolBar canvasState={canvasState} setCanvasState={setCanvasState}/>
+            <ToolBar canvasState={canvasState} setCanvasState={setCanvasState} socket={socket} boardId={boardId}/>
             {
             canvasState.mode === CanvasMode.Inserting && canvasState.layerType === LayerType.Text && currEle && canvasState.current as Point &&
               <input autoComplete='off' ref={inputRef} id='text-box' className={`bg-transparent w-auto fixed h-10 focus:outline-none font-serif text-4xl`}

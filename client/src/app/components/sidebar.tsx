@@ -2,14 +2,17 @@ import { cn } from "@/lib/utils";
 import { CanvasMode, CanvasState, LayerType } from "@/types/canvas";
 import { Circle, Minus, MousePointer2, Square, Type, Pencil, Brush, Trash2, Eraser } from "lucide-react";
 import { useDrawingContext } from "../context/drawing-context";
+import { Socket } from "socket.io-client";
 
 interface ToolBarProps {
     canvasState: CanvasState;
     setCanvasState: (state: CanvasState) => void;
-    Clear: () => void
+    Clear: () => void;
+    socket?: Socket<any, any>;
+    boardId?: string | string[];
 }
 
-export const Sidebar = ({canvasState,setCanvasState, Clear}: ToolBarProps) => {
+export const Sidebar = ({canvasState,setCanvasState, Clear,socket,boardId}: ToolBarProps) => {
 
     const {selectedTool, setSelectedTool, setSelection} = useDrawingContext()
 

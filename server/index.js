@@ -20,26 +20,32 @@ const io = new Server(server, {
 io.on('connection', (socket) => {
   console.log(`User connected: ${socket.id}`);
 
-  let lastDrawTime = Date.now();
-  const throttleInterval = 30; // milliseconds
+  socket.on("join-room", (data)=> {
+    socket.join(data)
+  })
+
+  socket.on("clear-board", (data) => {
+    socket.to(data.boardId).emit("board-data")
+  })
+
+  socket.on("board-actions", (data) => {
+    socket.to(data.boardId).emit("undo-redo", data.elements)
+  })
 
   socket.on('cursor-presence', (data) => {
-    socket.broadcast.emit('cursor-data', data);
+    socket.to(data.boardId).emit('cursor-data', data.data);
   });
 
-  socket.on('cursor-leave', () => {
-    socket.broadcast.emit('cursor-leave', { id: socket.id });
+  socket.on('cursor-leave', (data) => {
+    socket.to(data.boardId).emit('cursor-leave', { id: socket.id });
   });
 
   socket.on('draw', (data) => {
-    if (Date.now() - lastDrawTime >= throttleInterval) {
-      socket.broadcast.emit('draw-data', data);
-      lastDrawTime = Date.now();
-    }
+      socket.to(data.boardId).emit('draw-data', data.data);
   });
 
   socket.on('update-board', (data) => {
-    socket.broadcast.emit('update-data', data);
+    socket.to(data.boardId).emit('update-data', data.data);
   });
 
   socket.on('disconnect', () => {
