@@ -20,7 +20,6 @@ export default function Home() {
     });
 
     socket.on('cursor-leave', (data) => {
-      console.log(data)
       map.delete(data.id)
       setCursorPositions(new Map(map))      
     });

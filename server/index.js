@@ -24,6 +24,14 @@ io.on('connection', (socket) => {
     socket.join(data)
   })
 
+  socket.on("clear-board", (data) => {
+    socket.to(data.boardId).emit("board-data")
+  })
+
+  socket.on("board-actions", (data) => {
+    socket.to(data.boardId).emit("undo-redo", data.elements)
+  })
+
   socket.on('cursor-presence', (data) => {
     socket.to(data.boardId).emit('cursor-data', data.data);
   });

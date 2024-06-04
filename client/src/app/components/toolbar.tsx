@@ -6,19 +6,25 @@ import { Sidebar } from "./sidebar";
 import { useEffect, useState } from "react";
 import { ColorPicker } from "./color-picker";
 import { ContextMenu } from "./context-menu";
+import { Socket } from "socket.io-client";
 
 interface ToolBarProps {
     canvasState: CanvasState;
     setCanvasState: (state: CanvasState) => void;
+    socket?: Socket<any, any>;
+    boardId?: string | string[];
 }
 
-export const ToolBar = ({canvasState,setCanvasState}: ToolBarProps) => {
+export const ToolBar = ({canvasState,setCanvasState, socket,boardId}: ToolBarProps) => {
 
     const {selectedTool, setSelectedTool,elements,removeElement,addElement, setSelection, setElements} = useDrawingContext()
     const [history, setHistory] = useState<any>([])
     const [color, setColor] = useState("#000")
 
     const Undo = () => {
+        if(!elements){
+            return
+        }
         const n = elements.size
 
         if(n <=0 ){
@@ -32,6 +38,9 @@ export const ToolBar = ({canvasState,setCanvasState}: ToolBarProps) => {
         
         setHistory((history: any) => [...history, lastEle])
         removeElement(lastEle.id)        
+        if(socket && boardId){
+            socket.emit("board-actions", {boardId,elements})
+        }
         
     }
 
@@ -39,14 +48,24 @@ export const ToolBar = ({canvasState,setCanvasState}: ToolBarProps) => {
         if(history.length){
             const lastEle = history.pop()
             addElement(lastEle!)
+            if(socket && boardId){
+                socket.emit("draw", {boardId,data: lastEle})
+            }
         }
     }
 
     const Clear = () => {
+        if(!elements){
+            return
+        }
         let array = Array.from(elements, ([name, value]) => (value))
         setHistory(array)
         setElements(new Map())
         setSelection(undefined)
+        if(socket && boardId){
+            socket.emit("clear-board", {boardId,elements: new Map()})
+        }
+
     }
 
     const handlePointerDown = (e: any, tool: string, canvasState: CanvasState) => {
