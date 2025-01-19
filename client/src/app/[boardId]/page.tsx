@@ -4,9 +4,7 @@ import { Canvas } from "../components/canvas";
 import { io } from "socket.io-client";
 import { MousePointer2 } from "lucide-react";
 import { useParams } from "next/navigation";
-import { env } from "process";
 
-const url = process.env.backend_url || 'http://localhost:5000';
 
 const socket = io(`https://real-canvas-collab.onrender.com`);
 
