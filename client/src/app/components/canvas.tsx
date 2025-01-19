@@ -56,13 +56,6 @@ export const Canvas = ({socket, boardId}: {socket?: Socket<any, any>, boardId?: 
                 RenderCanvas(canvas, options,elements, camera, selection)
               });
 
-              socket.on("undo-redo", (data: any) => {
-                setElements(data.elements)
-              })
-              socket.on('board-data', () => {
-                setElements(new Map())
-              });
-
             }
           },50)
           
@@ -653,8 +646,6 @@ export const Canvas = ({socket, boardId}: {socket?: Socket<any, any>, boardId?: 
             if(socket ){
               socket.off("draw-data")
               socket.off("update-data")
-              socket.off("undo-redo")
-              socket.off("clear-board")
             }
         }
         
