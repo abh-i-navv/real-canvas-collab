@@ -22,8 +22,13 @@ export function pointerEventToCanvasPoint(e: React.PointerEvent, camera: Camera)
 }
 
 export const elementFinder = (point: Point, elements: Map<string, DrawingElement>): DrawingElement | null => {
+  if(!elements){
+    return null
+  }
+  console.log(elements)
+  
   const entries = Array.from(elements.entries());
-
+  
   for (let i = 0; i < entries.length; i++) {
     const [key, el] = entries[i];
     const { x, y, w, h,offsetX,offsetY } = el.dimensions;

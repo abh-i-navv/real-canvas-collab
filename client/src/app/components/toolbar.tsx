@@ -37,10 +37,7 @@ export const ToolBar = ({canvasState,setCanvasState, socket,boardId}: ToolBarPro
         setSelection(undefined)
         
         setHistory((history: any) => [...history, lastEle])
-        removeElement(lastEle.id)        
-        if(socket && boardId){
-            socket.emit("board-actions", {boardId,elements})
-        }
+        removeElement(lastEle.id)   
         
     }
 
@@ -48,9 +45,6 @@ export const ToolBar = ({canvasState,setCanvasState, socket,boardId}: ToolBarPro
         if(history.length){
             const lastEle = history.pop()
             addElement(lastEle!)
-            if(socket && boardId){
-                socket.emit("draw", {boardId,data: lastEle})
-            }
         }
     }
 
@@ -62,9 +56,6 @@ export const ToolBar = ({canvasState,setCanvasState, socket,boardId}: ToolBarPro
         setHistory(array)
         setElements(new Map())
         setSelection(undefined)
-        if(socket && boardId){
-            socket.emit("clear-board", {boardId,elements: new Map()})
-        }
 
     }
 
