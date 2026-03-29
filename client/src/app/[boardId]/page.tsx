@@ -6,7 +6,9 @@ import { MousePointer2 } from "lucide-react";
 import { useParams } from "next/navigation";
 
 
-const socket = io(`https://real-canvas-collab.onrender.com`);
+// const socket = io(`https://real-canvas-collab.onrender.com`);
+const socket = io(process.env.NEXT_PUBLIC_SOCKET_URL || "http://localhost:5000");
+
 
 export default function Home() {
   const {boardId} = useParams()
